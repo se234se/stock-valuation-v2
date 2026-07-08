@@ -85,7 +85,8 @@ tr:hover{background:#f8fafc}
 .grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px}
 @media(max-width:768px){.grid{grid-template-columns:1fr}}
 .upload-box{background:white;padding:20px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}
-.upload-box textarea{width:100%;height:200px;font-family:monospace;font-size:12px;border:1px solid #cbd5e1;border-radius:8px;padding:10px}
+.upload-box input[type=file]{margin-bottom:10px;font-size:13px}
+.upload-box textarea{width:100%;height:120px;font-family:monospace;font-size:12px;border:1px solid #cbd5e1;border-radius:8px;padding:10px}
 .upload-box button{background:#3b82f6;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;margin-top:10px}
 .status{margin-top:10px;font-size:13px;color:#16a34a}
 </style></head>
@@ -94,8 +95,9 @@ tr:hover{background:#f8fafc}
 <div class="subtitle">AI Supply Chain Comp · 数据状态: ${dataStatus}</div>
 <div class="upload-box">
   <h2>更新数据</h2>
-  <p style="font-size:13px;color:#64748b;margin-bottom:10px">粘贴 CSV 内容（制表符分隔），点击上传</p>
-  <textarea id="csvData" placeholder="粘贴 data.csv 内容..."></textarea><br>
+  <p style="font-size:13px;color:#64748b;margin-bottom:10px">选择 Excel 文件（.xlsx）或粘贴 CSV 内容</p>
+  <input type="file" id="fileInput" accept=".xlsx" onchange="handleFile(this)"><br>
+  <textarea id="csvData" placeholder="或在这里粘贴 data.csv 内容..."></textarea><br>
   <button onclick="uploadData()">上传更新</button>
   <div class="status" id="uploadStatus"></div>
 </div>
@@ -116,7 +118,22 @@ tr:hover{background:#f8fafc}
     <div class="section"><h2>日期</h2><table><thead><tr><th>日期</th><th>次数</th></tr></thead><tbody>${dayRows}</tbody></table></div>
   </div>
 </div>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script>
+function handleFile(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, {type: 'array'});
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const csv = XLSX.utils.sheet_to_csv(firstSheet, {FS: "\t"});
+    document.getElementById('csvData').value = csv;
+    uploadData();
+  };
+  reader.readAsArrayBuffer(file);
+}
 async function uploadData(){
   const text = document.getElementById('csvData').value;
   if(!text){alert('内容为空');return;}
