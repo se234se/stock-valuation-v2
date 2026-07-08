@@ -1,3 +1,4 @@
+move to api folder
 import { kv } from '@vercel/kv';
 
 function hash(str) {
