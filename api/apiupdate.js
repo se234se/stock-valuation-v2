@@ -1,3 +1,4 @@
+move to api folder
 import { kv } from '@vercel/kv';
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'VALUE2027';
