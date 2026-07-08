@@ -1,5 +1,4 @@
-move to api folder
-import { kv } from '@vercel/kv';
+import { getRedis } from './_redis.js';
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'VALUE2027';
 
@@ -26,7 +25,8 @@ export default async function handler(req, res) {
   }
 
   const csv = await req.text();
-  await kv.set('data:csv', csv);
-  await kv.set('data:meta', JSON.stringify({ updated: new Date().toLocaleString('zh-CN') }));
+  const redis = await getRedis();
+  await redis.set('data:csv', csv);
+  await redis.set('data:meta', JSON.stringify({ updated: new Date().toLocaleString('zh-CN') }));
   return res.status(200).json({ ok: true, size: csv.length });
 }
