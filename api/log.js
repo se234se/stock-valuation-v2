@@ -1,5 +1,4 @@
-move to api folder
-import { kv } from '@vercel/kv';
+import { getRedis } from './_redis.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -28,7 +27,8 @@ export default async function handler(req, res) {
 
   const today = new Date().toISOString().slice(0, 10);
   const key = `logs:${today}`;
-  await kv.lpush(key, JSON.stringify(entry));
-  await kv.expire(key, 7 * 24 * 60 * 60);
+  const redis = await getRedis();
+  await redis.lPush(key, JSON.stringify(entry));
+  await redis.expire(key, 7 * 24 * 60 * 60);
   return res.status(200).json({ ok: true });
 }
