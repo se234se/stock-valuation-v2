@@ -1,5 +1,4 @@
-move to api folder
-import { kv } from '@vercel/kv';
+import { getRedis } from './_redis.js';
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'VALUE2027';
 
@@ -20,12 +19,13 @@ export default async function handler(req, res) {
     return res.status(401).send('Unauthorized');
   }
 
+  const redis = await getRedis();
   const allLogs = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const key = `logs:${d.toISOString().slice(0, 10)}`;
-    const logs = await kv.lrange(key, 0, -1);
+    const logs = await redis.lRange(key, 0, -1);
     logs.forEach(l => {
       try {
         const entry = JSON.parse(l);
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     stats.byDay[l.date] = (stats.byDay[l.date] || 0) + 1;
   });
 
-  const meta = await kv.get('data:meta');
+  const meta = await redis.get('data:meta');
   let dataStatus = '未上传';
   if (meta) {
     try { dataStatus = '已更新于 ' + JSON.parse(meta).updated; } catch (e) {}
