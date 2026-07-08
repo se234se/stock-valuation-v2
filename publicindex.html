@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Supply Chain Comp</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #e8f4fd;
+            color: #1e293b;
+            line-height: 1.5;
+            font-size: 13px;
+        }
+
+        #login-screen {
+            position: fixed; inset: 0;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .login-box {
+            background: white; padding: 48px 40px; border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.15);
+            width: 100%; max-width: 400px; text-align: center;
+        }
+        .login-box h1 { font-size: 24px; margin-bottom: 8px; color: #1e40af; }
+        .login-box p { color: #64748b; margin-bottom: 32px; font-size: 14px; }
+        .login-box input {
+            width: 100%; padding: 14px 18px; background: #f8fafc; border: 1px solid #cbd5e1;
+            border-radius: 10px; font-size: 16px; color: #1e293b; outline: none;
+            transition: border-color 0.2s; margin-bottom: 16px;
+        }
+        .login-box input:focus { border-color: #3b82f6; }
+        .login-box button {
+            width: 100%; padding: 14px; background: #3b82f6; color: white; border: none;
+            border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;
+        }
+        .login-box button:hover { background: #2563eb; }
+        .login-error { color: #ef4444; font-size: 13px; margin-top: 12px; display: none; }
+
+        #main-content { display: none; max-width: 100%; margin: 0 auto; padding: 24px; }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+        .header h1 { font-size: 22px; font-weight: 700; color: #1e40af; }
+        .header .meta { color: #64748b; font-size: 12px; margin-top: 4px; }
+        .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+        .btn {
+            padding: 7px 14px; border-radius: 8px; border: none; font-size: 12px;
+            font-weight: 500; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary {
+            background: white; color: #475569; border: 1px solid #cbd5e1;
+        }
+        .btn-secondary:hover { background: #f1f5f9; }
+        .btn-secondary.active {
+            background: #1e40af; color: white; border-color: #1e40af;
+        }
+
+        .search-box {
+            padding: 7px 12px; background: white; border: 1px solid #cbd5e1;
+            border-radius: 8px; font-size: 12px; color: #1e293b; outline: none; width: 180px;
+        }
+        .search-box:focus { border-color: #3b82f6; }
+
+        .filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+        .filter-label { font-size: 12px; color: #64748b; font-weight: 600; margin-right: 4px; }
+
+        .table-wrapper {
+            background: white; border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            overflow: auto;
+            max-height: calc(100vh - 260px);
+        }
+        table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 12px; }
+
+        thead { position: sticky; top: 0; z-index: 100; }
+
+        .group-header {
+            background: #eff6ff; font-size: 11px; color: #1e40af; font-weight: 600;
+            border-bottom: 1px solid #bfdbfe;
+        }
+        .group-header th {
+            padding: 6px 8px; text-align: center;
+            border-right: 2px solid #bfdbfe;
+        }
+        .group-header th:last-child { border-right: none; }
+
+        th {
+            padding: 10px 8px; text-align: left; font-weight: 600; color: #475569;
+            cursor: pointer; user-select: none; white-space: nowrap;
+            background: #f8fafc; font-size: 11px;
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+        }
+        th.th-group-end { border-right: 2px solid #bfdbfe; }
+        .td-group-end { border-right: 2px solid #bfdbfe; }
+
+        .mobile-toggle { display: none; }
+        .dt-text { display: inline; }
+        .mb-text { display: none; }
+
+        @media (max-width: 768px) {
+            #main-content { padding: 12px; }
+            .header h1 { font-size: 16px; }
+            .header .meta { font-size: 10px; }
+            .btn { padding: 5px 10px; font-size: 10px; }
+            .search-box { width: 120px; padding: 5px 8px; font-size: 10px; }
+            .filter-bar { gap: 4px; margin-bottom: 10px; }
+            .filter-label { font-size: 10px; }
+            .summary-item { padding: 6px 10px; }
+            .summary-item .value { font-size: 14px; }
+            .table-wrapper { max-height: calc(100vh - 180px); border-radius: 8px; }
+            table { font-size: 10px; }
+            th, td { padding: 5px 4px; }
+            .mobile-hidden { display: none; }
+            .mobile-toggle { display: inline-block; }
+            .dt-text { display: none; }
+            .mb-text { display: inline; }
+            .mobile-force-show .mobile-hidden { display: table-cell; }
+            .name-col { max-width: 70px; white-space: normal; font-size: 9px; padding: 3px 2px; line-height: 1.3; }
+            th.name-col { font-size: 9px; padding: 4px 2px; }
+        }
+        th:last-child { border-right: none; }
+        th:hover { background: #f1f5f9; color: #1e40af; }
+        th .sort-icon { display: inline-block; margin-left: 3px; font-size: 9px; width: 10px; color: #94a3b8; }
+        th.sort-asc .sort-icon::after { content: "▲"; color: #1e40af; }
+        th.sort-desc .sort-icon::after { content: "▼"; color: #1e40af; }
+        th:not(.sort-asc):not(.sort-desc) .sort-icon::after { content: "⇅"; }
+
+        td { padding: 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+        tbody tr:hover { background: #f8fafc; }
+        tbody tr:last-child td { border-bottom: none; }
+
+        .sticky-left {
+            position: sticky;
+            z-index: 50;
+        }
+        thead .sticky-left {
+            z-index: 150;
+            background: #f8fafc;
+        }
+        tbody .sticky-left {
+            background: white;
+        }
+        tbody tr:hover .sticky-left {
+            background: #f8fafc;
+        }
+
+        .number { font-variant-numeric: tabular-nums; text-align: right; }
+        .center { text-align: center; }
+
+        .tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; }
+        .tag-a { background: #dbeafe; color: #1d4ed8; }
+        .tag-hk { background: #fce7f3; color: #be185d; }
+        .tag-jp { background: #fef3c7; color: #b45309; }
+        .tag-us { background: #d1fae5; color: #047857; }
+
+        .cat-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; background: #f1f5f9; color: #475569; }
+
+        .chg-up { color: #dc2626; }
+        .chg-down { color: #16a34a; }
+        .num-negative { color: #dc2626; }
+
+        .empty-state { text-align: center; padding: 60px 24px; color: #94a3b8; }
+        .empty-state h3 { font-size: 16px; color: #475569; }
+
+        .summary-bar { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+        .summary-item { background: white; padding: 10px 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .summary-item .label { font-size: 11px; color: #64748b; }
+        .summary-item .value { font-size: 18px; font-weight: 700; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <div id="login-screen">
+        <div class="login-box">
+            <h1>AI Supply Chain Comp</h1>
+            <p>数据已加密，请输入访问密码</p>
+            <input type="password" id="password-input" placeholder="密码" onkeydown="if(event.key==='Enter')checkPassword()">
+            <button onclick="checkPassword()">进入</button>
+            <div class="login-error" id="login-error">密码错误</div>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <div class="header">
+            <div>
+                <h1>AI Supply Chain Comp</h1>
+                <div class="meta">数据更新于 <span id="update-time">--</span> · 共 <span id="stock-count">0</span> 只 · 来源: Capital IQ</div>
+            </div>
+            <div class="header-actions">
+                <input type="text" class="search-box" id="search-input" placeholder="搜索..." oninput="filterData()">
+                <button class="btn btn-primary" onclick="loadData()">刷新</button>
+            </div>
+        </div>
+
+        <div class="summary-bar" id="summary-bar"></div>
+
+        <div class="filter-bar market-filters">
+            <span class="filter-label">市场:</span>
+            <button class="btn btn-secondary active" data-filter="all" onclick="setMarketFilter('all', this)">全部</button>
+            <button class="btn btn-secondary" data-filter="A股" onclick="setMarketFilter('A股', this)">A股</button>
+            <button class="btn btn-secondary" data-filter="港股" onclick="setMarketFilter('港股', this)">港股</button>
+            <button class="btn btn-secondary" data-filter="日股" onclick="setMarketFilter('日股', this)">日股</button>
+            <button class="btn btn-secondary" data-filter="美股" onclick="setMarketFilter('美股', this)">美股</button>
+        </div>
+
+        <div class="filter-bar cat-filters">
+            <span class="filter-label">分类:</span>
+            <button class="btn btn-secondary active" data-filter="all" onclick="setCatFilter('all', this)">全部</button>
+            <button class="btn btn-secondary" data-filter="Fabless" onclick="setCatFilter('Fabless', this)">Fabless</button>
+            <button class="btn btn-secondary" data-filter="CN Semi Cap" onclick="setCatFilter('CN Semi Cap', this)">CN Semi Cap</button>
+            <button class="btn btn-secondary" data-filter="JP Semi Cap" onclick="setCatFilter('JP Semi Cap', this)">JP Semi Cap</button>
+            <button class="btn btn-secondary" data-filter="RoW Semi Cap" onclick="setCatFilter('RoW Semi Cap', this)">RoW Semi Cap</button>
+            <button class="btn btn-secondary" data-filter="Foundry" onclick="setCatFilter('Foundry', this)">Foundry</button>
+            <button class="btn btn-secondary" data-filter="Optical" onclick="setCatFilter('Optical', this)">Optical</button>
+            <button class="btn btn-secondary" data-filter="DC" onclick="setCatFilter('DC', this)">DC</button>
+        </div>
+
+        <div class="filter-bar mobile-toggle" style="margin-bottom: 8px;">
+            <button class="btn btn-primary" onclick="toggleMobileColumns()" id="mobile-toggle-btn">展开为全部列</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="stock-table">
+                <thead>
+                    <tr class="group-header">
+                        <th colspan="10" class="mobile-hidden">Stock</th>
+                        <th colspan="4" class="mobile-hidden">P/E</th>
+                        <th colspan="4" class="mobile-hidden">EV/EBITDA</th>
+                        <th colspan="3" class="mobile-hidden">Rev YoY</th>
+                        <th colspan="4" class="mobile-hidden">EBITDA Margin</th>
+                        <th colspan="4" class="mobile-hidden">NP Margin</th>
+                    </tr>
+                    <tr>
+                        <th onclick="sortTable(0)" class="center sticky-left mobile-hidden" data-sticky-index="0">市场<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(1)" class="sticky-left mobile-hidden" data-sticky-index="1">分类<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(2)" class="sticky-left mobile-hidden" data-sticky-index="2">代码<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(3)" class="sticky-left" data-sticky-index="3">公司<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(4)" class="center mobile-hidden">币<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(5)" class="number">股价<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(6)" class="number mobile-hidden">25涨<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(7)" class="number">YTD<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(8)" class="number mobile-hidden">MKT Cap $b<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(9)" class="number th-group-end mobile-hidden">TEV $b<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(10)" class="number mobile-hidden">25<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(11)" class="number"><span class="dt-text">26</span><span class="mb-text">P/E 26</span><span class="sort-icon"></span></th>
+                        <th onclick="sortTable(12)" class="number mobile-hidden">27<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(13)" class="number th-group-end mobile-hidden">28<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(14)" class="number mobile-hidden">25<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(15)" class="number"><span class="dt-text">26</span><span class="mb-text">EV/EBITDA 26</span><span class="sort-icon"></span></th>
+                        <th onclick="sortTable(16)" class="number mobile-hidden">27<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(17)" class="number th-group-end mobile-hidden">28<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(18)" class="number mobile-hidden">26<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(19)" class="number mobile-hidden">27<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(20)" class="number th-group-end mobile-hidden">28<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(21)" class="number mobile-hidden">25<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(22)" class="number mobile-hidden">26<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(23)" class="number mobile-hidden">27<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(24)" class="number th-group-end mobile-hidden">28<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(25)" class="number mobile-hidden">25<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(26)" class="number mobile-hidden">26<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(27)" class="number mobile-hidden">27<span class="sort-icon"></span></th>
+                        <th onclick="sortTable(28)" class="number mobile-hidden">28<span class="sort-icon"></span></th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr><td colspan="29" class="empty-state"><h3>加载中...</h3></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG = {
+            apiUrl: "",
+            sessionHours: 8
+        };
+
+        let allData = [];
+        let filteredData = [];
+        let currentSort = { column: -1, ascending: true };
+        let marketFilter = 'all';
+        let catFilter = 'all';
+        let mobileShowAll = false;
+
+        function toggleMobileColumns() {
+            mobileShowAll = !mobileShowAll;
+            const wrapper = document.querySelector('.table-wrapper');
+            const btn = document.getElementById('mobile-toggle-btn');
+            if (mobileShowAll) {
+                wrapper.classList.add('mobile-force-show');
+                btn.textContent = '精简';
+            } else {
+                wrapper.classList.remove('mobile-force-show');
+                btn.textContent = '展开为全部列';
+            }
+        }
+
+        function reportVisit() {
+            try {
+                const token = localStorage.getItem('sv_token');
+                fetch("/api/log", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                    body: JSON.stringify({
+                        path: location.pathname,
+                        referrer: document.referrer,
+                        screen: screen.width + "x" + screen.height,
+                        lang: navigator.language,
+                    })
+                }).catch(() => {});
+            } catch (e) {}
+        }
+
+        async function checkPassword() {
+            const input = document.getElementById('password-input').value;
+            try {
+                const res = await fetch("/api/auth", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ password: input }),
+                });
+                if (res.ok) {
+                    const { token } = await res.json();
+                    localStorage.setItem('sv_token', token);
+                    localStorage.setItem('sv_auth', Date.now().toString());
+                    showMain();
+                } else {
+                    document.getElementById('login-error').textContent = '密码错误';
+                    document.getElementById('login-error').style.display = 'block';
+                    document.getElementById('password-input').value = '';
+                }
+            } catch (e) {
+                document.getElementById('login-error').textContent = '验证服务不可用';
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+
+        function showMain() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            loadData();
+            reportVisit();
+        }
+
+        function checkAuth() {
+            const auth = localStorage.getItem('sv_auth');
+            const token = localStorage.getItem('sv_token');
+            if (auth && token && (Date.now() - parseInt(auth)) < CONFIG.sessionHours * 3600000) {
+                showMain();
+            }
+        }
+
+        function detectMarket(ticker) {
+            if (!ticker) return '美股';
+            if (ticker.startsWith('SHSE:') || ticker.startsWith('SZSE:')) return 'A股';
+            if (ticker.startsWith('SEHK:')) return '港股';
+            if (ticker.startsWith('TSE:')) return '日股';
+            return '美股';
+        }
+
+        async function loadData() {
+            const token = localStorage.getItem('sv_token');
+            if (!token) { location.reload(); return; }
+
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '<tr><td colspan="29" class="empty-state"><h3>加载中...</h3></td></tr>';
+
+            try {
+                const response = await fetch("/api/data?t=" + Date.now(), {
+                    headers: { "Authorization": "Bearer " + token },
+                });
+                if (response.status === 401) {
+                    localStorage.removeItem('sv_token');
+                    localStorage.removeItem('sv_auth');
+                    location.reload(); return;
+                }
+                if (!response.ok) throw new Error('无法加载数据');
+
+                const updateTime = response.headers.get('X-Data-Updated') || '未知';
+                document.getElementById('update-time').textContent = updateTime;
+
+                const csv = await response.text();
+                allData = parseTSV(csv);
+                filterData();
+                updateSummary();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="29" class="empty-state"><h3>加载失败</h3><p>${err.message}</p></td></tr>`;
+            }
+        }
+
+        function parseTSV(tsv) {
+            const lines = tsv.trim().split('\n');
+            if (lines.length < 2) return [];
+
+            const headers = lines[0].split('\t').map(h => h.trim().replace(/^["']|["']$/g, ''));
+
+            return lines.slice(1).map(line => {
+                const cells = line.split('\t').map(c => c.trim().replace(/^["']|["']$/g, ''));
+                const getNum = (i) => {
+                    const v = parseFloat(cells[i]);
+                    return isNaN(v) ? null : v;
+                };
+
+                return {
+                    market: detectMarket(cells[2]),
+                    category: cells[0] || '',
+                    subcat: cells[1] || '',
+                    ticker: cells[2] || '',
+                    name: cells[3] || '',
+                    currency: cells[4] || '',
+                    price: getNum(5),
+                    chg25: getNum(6),
+                    ytd: getNum(7),
+                    mktcap: getNum(8),
+                    tev: getNum(9),
+                    pe25: getNum(10),
+                    pe26: getNum(11),
+                    pe27: getNum(12),
+                    pe28: getNum(13),
+                    ev25: getNum(14),
+                    ev26: getNum(15),
+                    ev27: getNum(16),
+                    ev28: getNum(17),
+                    rev26: getNum(18),
+                    rev27: getNum(19),
+                    rev28: getNum(20),
+                    ebitda25: getNum(21),
+                    ebitda26: getNum(22),
+                    ebitda27: getNum(23),
+                    ebitda28: getNum(24),
+                    np25: getNum(25),
+                    np26: getNum(26),
+                    np27: getNum(27),
+                    np28: getNum(28),
+                };
+            }).filter(r => r.name);
+        }
+
+        function setMarketFilter(m, btn) {
+            marketFilter = m;
+            document.querySelectorAll('.market-filters .btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterData();
+        }
+
+        function setCatFilter(c, btn) {
+            catFilter = c;
+            document.querySelectorAll('.cat-filters .btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterData();
+        }
+
+        function filterData() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+
+            filteredData = allData.filter(row => {
+                const matchMarket = marketFilter === 'all' || row.market === marketFilter;
+                const matchCat = catFilter === 'all' || row.category === catFilter;
+                const matchSearch = !query ||
+                    row.name.toLowerCase().includes(query) ||
+                    row.ticker.toLowerCase().includes(query) ||
+                    row.category.toLowerCase().includes(query);
+                return matchMarket && matchCat && matchSearch;
+            });
+
+            if (currentSort.column >= 0) applySort();
+            renderTable(filteredData);
+            document.getElementById('stock-count').textContent = filteredData.length;
+        }
+
+        const sortKeys = ['market', 'category', 'ticker', 'name', 'currency', 'price', 'chg25', 'ytd', 'mktcap', 'tev',
+            'pe25', 'pe26', 'pe27', 'pe28', 'ev25', 'ev26', 'ev27', 'ev28',
+            'rev26', 'rev27', 'rev28', 'ebitda25', 'ebitda26', 'ebitda27', 'ebitda28',
+            'np25', 'np26', 'np27', 'np28'];
+
+        function sortTable(column) {
+            const key = sortKeys[column];
+            if (currentSort.column === column) {
+                currentSort.ascending = !currentSort.ascending;
+            } else {
+                currentSort = { column, ascending: true };
+            }
+
+            document.querySelectorAll('thead tr:last-child th').forEach((th, i) => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (i === column) th.classList.add(currentSort.ascending ? 'sort-asc' : 'sort-desc');
+            });
+
+            applySort();
+            renderTable(filteredData);
+        }
+
+        function applySort() {
+            const key = sortKeys[currentSort.column];
+            filteredData.sort((a, b) => {
+                let va = a[key], vb = b[key];
+                if (va === null) return currentSort.ascending ? 1 : -1;
+                if (vb === null) return currentSort.ascending ? -1 : 1;
+                if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+                if (va < vb) return currentSort.ascending ? -1 : 1;
+                if (va > vb) return currentSort.ascending ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function applyStickyColumns() {
+            const table = document.getElementById('stock-table');
+            const headerCells = table.querySelectorAll('thead tr:last-child th');
+            const rows = table.querySelectorAll('tbody tr');
+
+            let left = 0;
+            for (let i = 0; i < 4; i++) {
+                const th = headerCells[i];
+                if (!th) continue;
+                
+                th.style.left = left + 'px';
+                
+                rows.forEach(row => {
+                    const td = row.cells[i];
+                    if (td) {
+                        td.classList.add('sticky-left');
+                        td.style.left = left + 'px';
+                    }
+                });
+                
+                left += th.getBoundingClientRect().width;
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('table-body');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="29" class="empty-state"><h3>无匹配数据</h3></td></tr>';
+                return;
+            }
+
+            const marketClass = { 'A股': 'tag-a', '港股': 'tag-hk', '日股': 'tag-jp', '美股': 'tag-us' };
+
+            const fmt = (v, pct = false) => {
+                if (v === null || v === undefined) return '<span style="color:#94a3b8">--</span>';
+                if (pct) {
+                    const cls = v > 0 ? 'chg-up' : (v < 0 ? 'chg-down' : '');
+                    const sign = v > 0 ? '+' : '';
+                    return `<span class="${cls}">${sign}${Math.round(v * 100)}%</span>`;
+                }
+                return Math.round(v).toString();
+            };
+
+            const fmtNum = (v) => {
+                if (v === null || v === undefined) return '<span style="color:#94a3b8">--</span>';
+                if (v < 0) return `<span class="num-negative">(${Math.round(Math.abs(v))})</span>`;
+                return Math.round(v).toString();
+            };
+
+            const fmtPct = (v) => {
+                if (v === null || v === undefined) return '<span style="color:#94a3b8">--</span>';
+                const sign = v > 0 ? '+' : '';
+                if (v < 0) return `<span class="num-negative">${sign}${Math.round(v * 100)}%</span>`;
+                return `<span>${sign}${Math.round(v * 100)}%</span>`;
+            };
+
+            tbody.innerHTML = data.map(row => {
+                const tag = marketClass[row.market] || 'tag-us';
+                return `<tr>
+                    <td class="center sticky-left mobile-hidden"><span class="tag ${tag}">${row.market}</span></td>
+                    <td class="sticky-left mobile-hidden"><span class="cat-tag">${row.category}</span></td>
+                    <td class="sticky-left mobile-hidden">${row.ticker}</td>
+                    <td class="sticky-left name-col"><strong>${row.name}</strong></td>
+                    <td class="center mobile-hidden">${row.currency}</td>
+                    <td class="number">${fmt(row.price)}</td>
+                    <td class="number mobile-hidden">${fmt(row.chg25, true)}</td>
+                    <td class="number">${fmt(row.ytd, true)}</td>
+                    <td class="number mobile-hidden">${fmt(row.mktcap)}</td>
+                    <td class="number td-group-end mobile-hidden">${fmt(row.tev)}</td>
+                    <td class="number mobile-hidden">${fmtNum(row.pe25)}</td>
+                    <td class="number">${fmtNum(row.pe26)}</td>
+                    <td class="number mobile-hidden">${fmtNum(row.pe27)}</td>
+                    <td class="number td-group-end mobile-hidden">${fmtNum(row.pe28)}</td>
+                    <td class="number mobile-hidden">${fmtNum(row.ev25)}</td>
+                    <td class="number">${fmtNum(row.ev26)}</td>
+                    <td class="number mobile-hidden">${fmtNum(row.ev27)}</td>
+                    <td class="number td-group-end mobile-hidden">${fmtNum(row.ev28)}</td>
+                    <td class="number mobile-hidden">${fmtPct(row.rev26)}</td>
+                    <td class="number mobile-hidden">${fmtPct(row.rev27)}</td>
+                    <td class="number td-group-end mobile-hidden">${fmtPct(row.rev28)}</td>
+                    <td class="number mobile-hidden">${fmtPct(row.ebitda25)}</td>
+                    <td class="number mobile-hidden">${fmtPct(row.ebitda26)}</td>
+                    <td class="number mobile-hidden">${fmtPct(row.ebitda27)}</td>
+                    <td class="number td-group-end mobile-hidden">${fmtPct(row.ebitda28)}</td>
+                    <td class="number mobile-hidden">${fmtPct(row.np25)}</td>
+                    <td class="number mobile-hidden">${fmtPct(row.np26)}</td>
+                    <td class="number mobile-hidden">${fmtPct(row.np27)}</td>
+                    <td class="number mobile-hidden">${fmtPct(row.np28)}</td>
+                </tr>`;
+            }).join('');
+
+            requestAnimationFrame(() => {
+                applyStickyColumns();
+            });
+        }
+
+        function updateSummary() {
+            const counts = {};
+            allData.forEach(r => { counts[r.market] = (counts[r.market] || 0) + 1; });
+            const cats = {};
+            allData.forEach(r => { cats[r.category] = (cats[r.category] || 0) + 1; });
+
+            let html = '';
+            Object.entries(counts).forEach(([m, c]) => {
+                html += `<div class="summary-item"><div class="label">${m}</div><div class="value">${c}</div></div>`;
+            });
+            html += '<div style="width:1px;background:#e2e8f0;margin:0 8px"></div>';
+            Object.entries(cats).forEach(([c, n]) => {
+                html += `<div class="summary-item"><div class="label">${c}</div><div class="value">${n}</div></div>`;
+            });
+
+            document.getElementById('summary-bar').innerHTML = html;
+        }
+
+        checkAuth();
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('password-input');
+            if (input) input.focus();
+        });
+
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (filteredData.length > 0) {
+                    applyStickyColumns();
+                }
+            }, 200);
+        });
+    </script>
+</body>
+</html>
