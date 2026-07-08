@@ -1,5 +1,4 @@
-move to api folder
-import { kv } from '@vercel/kv';
+import { getRedis } from './_redis.js';
 
 function hash(str) {
   let h = 0;
@@ -26,6 +25,7 @@ export default async function handler(req, res) {
   }
 
   const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
-  await kv.set(`token:${token}`, Date.now(), { ex: 28800 });
+  const redis = await getRedis();
+  await redis.setEx(`token:${token}`, 28800, Date.now().toString());
   return res.status(200).json({ token });
 }
