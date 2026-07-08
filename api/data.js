@@ -1,5 +1,4 @@
-move to api folder
-import { kv } from '@vercel/kv';
+import { getRedis } from './_redis.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,11 +11,12 @@ export default async function handler(req, res) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).send('Unauthorized');
 
-  const valid = await kv.get(`token:${token}`);
+  const redis = await getRedis();
+  const valid = await redis.get(`token:${token}`);
   if (!valid) return res.status(401).send('Expired');
 
-  const csv = await kv.get('data:csv');
-  const meta = await kv.get('data:meta');
+  const csv = await redis.get('data:csv');
+  const meta = await redis.get('data:meta');
   let updated = '未知';
   if (meta) {
     try { updated = JSON.parse(meta).updated; } catch (e) {}
