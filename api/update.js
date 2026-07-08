@@ -11,6 +11,15 @@ function hash(str) {
   return h;
 }
 
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -24,7 +33,7 @@ export default async function handler(req, res) {
     return res.status(401).send('Unauthorized');
   }
 
-  const csv = await req.text();
+  const csv = await readBody(req);
   const redis = await getRedis();
   await redis.set('data:csv', csv);
   await redis.set('data:meta', JSON.stringify({ updated: new Date().toLocaleString('zh-CN') }));
