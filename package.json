@@ -2,6 +2,6 @@
   "name": "stock-valuation-v2",
   "version": "1.0.0",
   "dependencies": {
-    "@vercel/kv": "^1.0.1"
+    "redis": "^4.7.0"
   }
 }
